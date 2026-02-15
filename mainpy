@@ -1,0 +1,148 @@
+import sqlite3
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from typing import List, Dict, Optional
+
+app = FastAPI()
+
+# Serve static files
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+DB_NAME = "vault_v2.db"
+
+def init_db():
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        # Create Users Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                salt TEXT NOT NULL,
+                enc_sk TEXT NOT NULL,
+                pk TEXT NOT NULL
+            )
+        """)
+        # Create Vault Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vault (
+                id TEXT PRIMARY KEY,
+                username TEXT NOT NULL,
+                site TEXT NOT NULL,
+                ciphertext TEXT NOT NULL,
+                content TEXT NOT NULL,
+                category TEXT DEFAULT 'Personal',
+                FOREIGN KEY (username) REFERENCES users (username)
+            )
+        """)
+        conn.commit()
+
+# Initialize DB on startup
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+@app.get("/")
+def home():
+    return FileResponse("frontend/index.html")
+
+# -------------------------------
+# Models
+# -------------------------------
+
+class RegisterRequest(BaseModel):
+    username: str
+    salt: str
+    enc_sk: str  # Encrypted Kyber Secret Key
+    pk: str      # Kyber Public Key
+
+class LoginRequest(BaseModel):
+    username: str
+
+class CredentialPayload(BaseModel):
+    id: str
+    site: str
+    category: str = "Personal"
+    ciphertext: str
+    content: str
+
+# -------------------------------
+# API Endpoints
+# -------------------------------
+
+@app.post("/api/register")
+def register(data: RegisterRequest):
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO users (username, salt, enc_sk, pk) VALUES (?, ?, ?, ?)",
+                (data.username, data.salt, data.enc_sk, data.pk)
+            )
+            conn.commit()
+            return {"status": "success", "message": "User created"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="User already exists")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/login")
+def login(data: LoginRequest):
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE username = ?", (data.username,))
+        user = cursor.fetchone()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "status": "success",
+            "salt": user["salt"],
+            "enc_sk": user["enc_sk"],
+            "pk": user["pk"]
+        }
+
+@app.get("/api/vault/{username}")
+def get_vault(username: str):
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        # Verify user exists first
+        cursor.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="User not found")
+
+        cursor.execute("SELECT id, site, ciphertext, content, category FROM vault WHERE username = ?", (username,))
+        rows = cursor.fetchall()
+        
+        vault_items = [dict(row) for row in rows]
+        return {"vault": vault_items}
+
+@app.post("/api/vault/{username}/add")
+async def add_credential(username: str, payload: CredentialPayload):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO vault (id, username, site, ciphertext, content, category) VALUES (?, ?, ?, ?, ?, ?)",
+        (payload.id, username, payload.site, payload.ciphertext, payload.content, payload.category)
+    )
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
+
+@app.delete("/api/vault/{username}/delete/{cred_id}")
+async def delete_credential(username: str, cred_id: str):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("DELETE FROM vault WHERE id = ? AND username = ?", (cred_id, username))
+    
+    if c.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Credential not found")
+        
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
