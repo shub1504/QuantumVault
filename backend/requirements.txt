@@ -1,0 +1,23 @@
+# Flask Backend Requirements
+
+# Web framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+Flask-SQLAlchemy==3.1.1
+
+# Database
+SQLAlchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Production server
+gunicorn==21.2.0
+
+# Cryptography
+cryptography>=41.0.0
+
+# Post-quantum cryptography (ML-KEM / Kyber)
+# Note: This may fail to install - that's okay, code has fallback
+pqcrypto>=0.1.7
+
+# Utilities
+python-dotenv==1.0.0
