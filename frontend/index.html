@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>QSCV | Quantum-Safe Credential Vault</title>
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/style.css">
+    
+    <!-- Import Maps for ES Modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "crystals-kyber-js": "https://cdn.jsdelivr.net/npm/crystals-kyber-js@1.1.1/+esm"
+        }
+    }
+    </script>
+</head>
+
+<body class="font-sans antialiased text-slate-200 selection:bg-cyan-500 selection:text-white">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 top-0 left-0 border-b border-white/10 glass-panel">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="location.reload()">
+                <img src="/static/logo.svg" class="w-10 h-10 drop-shadow-[0_0_10px_rgba(6,182,212,0.5)] group-hover:scale-110 transition-transform" alt="QuantumVault Logo">
+                <h1 class="text-xl font-bold tracking-tight text-white">
+                    Quantum<span class="text-cyan-400">Vault</span>
+                </h1>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <div id="userDisplay" class="hidden flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-sm font-mono text-cyan-300"></span>
+                </div>
+                <button id="logoutBtn" class="hidden text-sm text-slate-400 hover:text-white transition-colors">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-float"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-float" style="animation-delay: -3s;"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="relative z-10 min-h-screen flex flex-col pt-24">
+
+        <!-- Landing Section -->
+        <section id="landingPage" class="flex-grow flex flex-col animate-slide-up overflow-y-auto">
+            <!-- Hero Section -->
+            <div class="container mx-auto px-6 py-12 md:py-20 flex flex-col-reverse md:flex-row items-center gap-12 min-h-[80vh]">
+                <!-- Left Content -->
+                <div class="flex-1 text-center md:text-left space-y-8">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+                        <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                        Post-Quantum Cryptography Ready
+                    </div>
+                    
+                    <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-100 to-slate-400">
+                        Secure Your Future <br>
+                        <span class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-cyan-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.5)] inline-block whitespace-nowrap">Before It's Decrypted</span>
+                    </h2>
+                    
+                    <p class="text-lg text-slate-400 max-w-2xl leading-relaxed mx-auto md:mx-0">
+                        The world's first browser-based credential vault secured by <strong>Kyber-768</strong> (ML-KEM). 
+                        Protect your secrets against the quantum threat with military-grade lattice cryptography.
+                    </p>
+        
+                    <div class="flex flex-col md:flex-row items-center gap-4 justify-center md:justify-start">
+                        <button id="startBtn" class="group relative px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold text-white shadow-xl shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:-translate-y-1 btn-glow disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <span class="relative z-10 flex items-center gap-2">
+                                Initialize Vault
+                                <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                            </span>
+                        </button>
+                        <a href="#features" class="px-8 py-4 border border-white/10 rounded-xl font-bold text-slate-300 hover:bg-white/5 transition-colors">
+                            Learn More
+                        </a>
+                    </div>
+                    
+                    <p id="initError" class="text-red-400 text-sm hidden bg-red-900/20 px-4 py-2 rounded-lg border border-red-500/30 inline-block">
+                        ⚠ Failed to load crypto libraries. Check internet connection.
+                    </p>
+                </div>
+                
+                <!-- Right Animation -->
+                <div class="flex-1 flex justify-center items-center relative group">
+                    <!-- Glowing Background -->
+                    <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 to-purple-500/20 rounded-full blur-[100px] animate-pulse"></div>
+                    
+                    <div class="relative z-10 text-center transform transition-transform duration-700 hover:scale-105">
+                        <img src="/static/logo.svg" class="w-64 h-64 md:w-80 md:h-80 mx-auto drop-shadow-[0_0_30px_rgba(6,182,212,0.6)] animate-float" alt="QuantumVault Logo">
+                        <h1 class="text-4xl md:text-5xl font-bold mt-8 text-white tracking-tighter">
+                            Quantum<span class="text-cyan-400">Vault</span>
+                        </h1>
+                        <p class="text-sm font-mono text-cyan-300/70 mt-2 tracking-widest uppercase">Lattice-Based Security</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features & How it Works Section -->
+            <div id="features" class="bg-black/20 backdrop-blur-sm border-t border-white/5 py-20">
+                <div class="container mx-auto px-6">
+                    <!-- How It Works -->
+                    <div class="mb-20">
+                        <h3 class="text-3xl font-bold text-center text-white mb-12">How It Works</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div class="glass-panel p-8 rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 mb-6 text-xl font-bold">1</div>
+                                <h4 class="text-xl font-bold text-white mb-3">Key Encapsulation</h4>
+                                <p class="text-slate-400 text-sm leading-relaxed">
+                                    Your data key is encapsulated inside a <strong>Kyber-768</strong> mathematical puzzle that quantum computers cannot solve efficiently.
+                                </p>
+                            </div>
+                            <div class="glass-panel p-8 rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 mb-6 text-xl font-bold">2</div>
+                                <h4 class="text-xl font-bold text-white mb-3">Hybrid Encryption</h4>
+                                <p class="text-slate-400 text-sm leading-relaxed">
+                                    The actual data is locked with <strong>AES-256-GCM</strong>, while the key is protected by post-quantum algorithms. Best of both worlds.
+                                </p>
+                            </div>
+                            <div class="glass-panel p-8 rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-colors">
+                                <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 mb-6 text-xl font-bold">3</div>
+                                <h4 class="text-xl font-bold text-white mb-3">Zero Knowledge</h4>
+                                <p class="text-slate-400 text-sm leading-relaxed">
+                                    Your master password never leaves your device. We store only the encrypted ciphertext. We cannot see your data.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Features List -->
+                    <div>
+                        <h3 class="text-3xl font-bold text-center text-white mb-12">Security Features</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <div class="text-center p-4">
+                                <div class="text-cyan-400 mb-2">
+                                    <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                </div>
+                                <h5 class="font-bold text-white">Kyber-768</h5>
+                                <p class="text-xs text-slate-500">NIST PQC Standard</p>
+                            </div>
+                            <div class="text-center p-4">
+                                <div class="text-purple-400 mb-2">
+                                    <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                </div>
+                                <h5 class="font-bold text-white">AES-256-GCM</h5>
+                                <p class="text-xs text-slate-500">Military Grade</p>
+                            </div>
+                            <div class="text-center p-4">
+                                <div class="text-green-400 mb-2">
+                                    <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                </div>
+                                <h5 class="font-bold text-white">PBKDF2 Hashing</h5>
+                                <p class="text-xs text-slate-500">Key Derivation</p>
+                            </div>
+                            <div class="text-center p-4">
+                                <div class="text-yellow-400 mb-2">
+                                    <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                                <h5 class="font-bold text-white">Fast & Local</h5>
+                                <p class="text-xs text-slate-500">Client-Side Logic</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Auth Section -->
+        <section id="authPage" class="hidden flex-grow flex items-center justify-center p-6 animate-slide-up">
+            <div class="w-full max-w-md glass-panel p-8 rounded-2xl relative overflow-hidden">
+                <!-- Decorative Top Border -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+
+                <div class="text-center mb-8">
+                    <h3 id="authTitle" class="text-2xl font-bold text-white mb-2">Access Vault</h3>
+                    <p class="text-slate-400 text-sm">Authenticate with your quantum identity</p>
+                </div>
+                
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Username</label>
+                        <input type="text" id="usernameInput" class="w-full px-4 py-3 rounded-lg text-white placeholder-slate-600 modern-input focus:outline-none" placeholder="Enter your ID">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Master Password</label>
+                        <input type="password" id="passwordInput" class="w-full px-4 py-3 rounded-lg text-white placeholder-slate-600 modern-input focus:outline-none" placeholder="••••••••••••">
+                    </div>
+                    
+                    <div id="registerFields" class="hidden bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg">
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 w-2 h-2 rounded-full bg-yellow-500 shrink-0 animate-pulse"></div>
+                            <p class="text-xs text-yellow-200">
+                                <strong>Generating Kyber-768 Keys:</strong> Your device will create a Post-Quantum key pair. This may take a few seconds.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button id="authActionBtn" class="w-full py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold shadow-lg shadow-cyan-900/20 transition-all hover:-translate-y-0.5 btn-glow">
+                        Login
+                    </button>
+                    
+                    <div class="text-center mt-6">
+                        <button id="toggleAuthMode" class="text-sm text-slate-400 hover:text-cyan-400 transition-colors">
+                            New user? Create an account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section id="dashboardPage" class="hidden flex-grow px-6 py-8 max-w-7xl mx-auto w-full animate-slide-up">
+            
+            <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-2">My Vault</h2>
+                    <p class="text-slate-400">Secured by Lattice-Based Cryptography</p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Category Filter -->
+                    <select id="categoryFilter" class="bg-slate-900/50 text-slate-300 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500">
+                        <option value="all">All Categories</option>
+                        <option value="Social">Social</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Work">Work</option>
+                        <option value="Personal">Personal</option>
+                    </select>
+
+                    <div class="h-6 w-px bg-white/10"></div>
+
+                    <!-- Hacker Toggle -->
+                    <label class="relative inline-flex items-center cursor-pointer group">
+                        <input type="checkbox" id="attackerToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                        <span class="ml-3 text-sm font-medium text-slate-300 group-hover:text-white transition-colors">🕵️‍♂️ Hacker View</span>
+                    </label>
+
+                    <div class="h-6 w-px bg-white/10"></div>
+
+                    <button id="addCredBtn" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-5 py-2 rounded-lg font-semibold shadow-lg shadow-cyan-900/20 transition-all hover:-translate-y-0.5 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Add Credential
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Log (Removed) -->
+            <!-- <div id="cryptoLog" class="hidden font-mono text-xs text-green-400/80 p-4 rounded-xl mb-8 h-24 overflow-y-auto bg-black/40 border border-white/5 shadow-inner hidden md:block">
+                <div>> System Ready. Waiting for input...</div>
+            </div> -->
+
+            <!-- Vault Grid -->
+            <div id="vaultGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Items will be injected here -->
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Add Credential Modal -->
+    <div id="addModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 opacity-0 transition-opacity duration-300">
+        <div class="glass-panel p-8 rounded-2xl max-w-md w-full relative transform scale-95 transition-transform duration-300">
+            <h3 class="text-xl font-bold mb-6 text-white">Store New Credential</h3>
+            
+            <div class="space-y-4">
+                <div class="flex gap-4">
+                    <input type="text" id="newSite" placeholder="Service Name (e.g. Google)" class="flex-1 px-4 py-3 rounded-lg text-white placeholder-slate-500 modern-input focus:outline-none">
+                    <select id="newCategory" class="px-4 py-3 rounded-lg text-white bg-slate-800 border border-slate-700 modern-input focus:outline-none w-1/3">
+                        <option value="Social">Social</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Work">Work</option>
+                        <option value="Personal">Personal</option>
+                    </select>
+                </div>
+                <input type="text" id="newUsername" placeholder="Username / Email" class="w-full px-4 py-3 rounded-lg text-white placeholder-slate-500 modern-input focus:outline-none">
+                
+                <div class="relative">
+                    <input type="password" id="newPassword" placeholder="Password" class="w-full px-4 py-3 rounded-lg text-white placeholder-slate-500 modern-input focus:outline-none">
+                    <!-- Strength Meter -->
+                    <div class="mt-2 h-1 w-full bg-slate-700 rounded-full overflow-hidden">
+                        <div id="passwordStrengthBar" class="h-full w-0 transition-all duration-300"></div>
+                    </div>
+                    <p id="passwordStrengthText" class="text-[10px] text-right mt-1 text-slate-500 font-mono">Strength: None</p>
+                </div>
+
+                <textarea id="newNotes" placeholder="Secure Notes (Optional)" class="w-full px-4 py-3 rounded-lg text-white placeholder-slate-500 modern-input focus:outline-none h-24 resize-none"></textarea>
+            </div>
+
+            <div class="flex gap-4 mt-8">
+                <button id="cancelAddBtn" class="flex-1 py-3 border border-slate-600 hover:bg-slate-800 text-slate-300 rounded-lg transition-colors">Cancel</button>
+                <button id="saveCredBtn" class="flex-1 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg shadow-lg shadow-cyan-900/20 transition-transform hover:-translate-y-0.5">Encrypt & Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Credential Modal -->
+    <div id="viewModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="glass-panel p-8 rounded-2xl max-w-md w-full relative border-t border-cyan-500/50">
+            <button id="closeViewBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">✕</button>
+            
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h3 id="viewSite" class="text-2xl font-bold text-white">Google</h3>
+            </div>
+            
+            <div class="space-y-5">
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Username</label>
+                    <div id="viewUsername" class="text-slate-200 font-mono select-all">user@gmail.com</div>
+                </div>
+                
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Password</label>
+                    <div class="flex items-center justify-between">
+                        <div id="viewPassword" class="text-cyan-400 font-mono text-lg">********</div>
+                        <button id="revealBtn" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded text-slate-300 transition-colors">Reveal</button>
+                        
+                        <!-- Verification Section (Hidden by default) -->
+                        <div id="verifySection" class="hidden flex items-center gap-2">
+                            <input type="password" id="verifyPasswordInput" placeholder="Master Password" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:border-cyan-500 outline-none w-32">
+                            <button id="verifyBtn" class="text-xs bg-cyan-600 hover:bg-cyan-500 px-3 py-1 rounded text-white font-bold transition-colors">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Secure Notes</label>
+                    <div class="relative group">
+                        <!-- Blurred Overlay -->
+                        <div id="notesOverlay" class="absolute inset-0 bg-slate-900/90 flex items-center justify-center cursor-pointer backdrop-blur-sm rounded transition-opacity hover:bg-slate-900/80">
+                            <span class="text-xs text-cyan-400 font-bold flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                Click to Reveal Notes
+                            </span>
+                        </div>
+                        
+                        <!-- Actual Notes Content -->
+                        <div id="viewNotes" class="text-slate-300 text-sm whitespace-pre-wrap font-mono min-h-[4rem] p-2"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Kyber-768 Encapsulation</label>
+                    <div class="text-[10px] text-slate-500 break-all font-mono bg-black/40 p-3 rounded border border-slate-800" id="viewKyberInfo">
+                        (Ciphertext will appear here)
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
+                    <p class="text-[10px] text-slate-500 font-mono">Quantum-Resistant AES-256-GCM</p>
+                    <button id="deleteCredBtn" class="text-xs text-red-500 hover:text-red-400 font-bold transition-colors flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Delete Credential
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hacker View Modal -->
+    <div id="hackerModal" class="fixed inset-0 bg-red-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-mono">
+        <div class="bg-black p-6 rounded-xl max-w-2xl w-full border-2 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)] relative overflow-hidden">
+            <!-- Scanlines -->
+            <div class="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02),rgba(255,0,0,0.06))] z-0 bg-[length:100%_4px,6px_100%]"></div>
+            
+            <button id="closeHackerBtn" class="absolute top-4 right-4 text-red-500 hover:text-white z-10">✕</button>
+            
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-4 border-b border-red-900 pb-4">
+                    <div class="w-3 h-3 bg-red-600 rounded-full animate-ping"></div>
+                    <h3 class="text-xl font-bold text-red-500 tracking-widest">⚠ DATA BREACH SIMULATION</h3>
+                </div>
+
+                <p class="text-xs text-red-300 mb-6 bg-red-900/20 p-3 rounded border-l-2 border-red-600">
+                    <strong>ATTACKER PERSPECTIVE:</strong> This is the raw data extracted from the database. 
+                    Without the user's private key (stored locally), this information is mathematically impossible to decrypt.
+                </p>
+                
+                <div class="space-y-4 text-sm overflow-y-auto max-h-[50vh] pr-2">
+                    <div>
+                        <label class="text-[10px] text-red-700 uppercase font-bold">Record ID</label>
+                        <div id="hackId" class="text-white"></div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-red-700 uppercase font-bold">Kyber-768 Ciphertext</label>
+                        <div id="hackCipher" class="text-green-500/80 break-all bg-black p-2 rounded text-[10px] border border-red-900/30"></div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-red-700 uppercase font-bold">AES-256 Payload</label>
+                        <div id="hackContent" class="text-yellow-500/80 break-all bg-black p-2 rounded text-[10px] border border-red-900/30"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <div class="inline-block bg-red-600 text-black font-bold px-4 py-2 rounded text-xs animate-pulse">
+                        ⛔ DECRYPTION FAILED: KEY NOT FOUND
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- JS -->
+    <script type="module" src="/static/script.js"></script>
+    <script>
+        // Fallback error handler
+        window.addEventListener('error', function(e) {
+            if (e.message && (e.message.includes('import') || e.message.includes('loading'))) {
+                document.getElementById("initError").classList.remove("hidden");
+                document.getElementById("startBtn").innerText = "Error";
+            }
+        });
+    </script>
+</body>
+</html>
